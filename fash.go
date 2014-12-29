@@ -1,50 +1,34 @@
 package main
 
 import (
-	"bytes"
-	"encoding/binary"
-	"fmt"
 	"hash/fnv"
 	"os"
+	"path/filepath"
 )
 
-const BLOCK_SIZE = 8192
+const SAMPLE_SIZE = 4096
 
-func g(path string) {
-	buffer := make([]byte, BLOCK_SIZE)
-	buf := new(bytes.Buffer)
-
-	f, err := os.Open(path)
-	fi, err := f.Stat()
-	if err != nil {
-		// Could not obtain stat, handle error
-	}
-	size := fi.Size()
+func g(path string) uint64 {
+	buffer := make([]byte, SAMPLE_SIZE)
 	h := fnv.New64a()
 
-	cnt, err := f.Read(buffer)
-	h.Write(buffer)
-
-	middle := size / 2
-
-	f.Seek(middle, os.SEEK_SET)
+	f, _ := os.Open(path)
 	f.Read(buffer)
 	h.Write(buffer)
 
-	f.Seek(-BLOCK_SIZE, os.SEEK_END)
-	f.Read(buffer)
-	h.Write(buffer)
-
-	binary.Write(buf, binary.LittleEndian, size)
-	h.Write(buf.Bytes())
-	fmt.Println(h.Sum64())
-
-	_ = size
-	_ = cnt
+	return h.Sum64()
 }
 
 func main() {
-	//g("fash.go")
-	//g("/Volumes/video/Planes (2013)/Planes.2013.720p.BluRay.x264.YIFY.mp4")
 	g("test2")
+	traverse("d://tmp//t7")
+}
+
+func traverse(root string) {
+	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		go g(path)
+		if filepath.Ext(path) == ".c" {
+		}
+		return nil
+	})
 }
