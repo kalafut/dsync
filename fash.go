@@ -39,19 +39,24 @@ func g(files <-chan File, results chan<- File) {
 	wg.Done()
 }
 
-func traverse(root string, files chan<- File) {
-	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if true || EXT[filepath.Ext(path)] {
-			files <- File{Path: path, Size: info.Size()}
-		}
-		return nil
-	})
-	close(files)
+func traverse(root string) <-chan File {
+	files := make(chan File)
+	go func() {
+		defer close(files)
+		filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if true || EXT[filepath.Ext(path)] {
+				files <- File{Path: path, Size: info.Size()}
+			}
+			return nil
+		})
+	}()
+	return files
 }
 
 func main() {
-	files := make(chan File, 100)
 	results := make(chan File, 100)
+
+	files := traverse(".")
 
 	wg2.Add(1)
 	go func() {
@@ -65,7 +70,6 @@ func main() {
 		wg.Add(1)
 		go g(files, results)
 	}
-	traverse(".", files)
 	wg.Wait()
 	close(results)
 	wg2.Wait()
