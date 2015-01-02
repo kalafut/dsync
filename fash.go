@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"encoding/gob"
 	"hash/fnv"
 	"os"
 	"path/filepath"
@@ -10,8 +10,6 @@ import (
 
 const SAMPLE_SIZE = 4096
 const WORKERS = 10
-
-var wg, wg2 sync.WaitGroup
 
 var EXT = map[string]bool{
 	".jpg": true,
@@ -24,7 +22,12 @@ type File struct {
 	Hash uint64
 }
 
-func g(files <-chan File, results chan<- File) {
+type Catalog struct {
+	mutex *sync.Mutex
+	Files []File
+}
+
+func g(files <-chan File, results *Catalog) {
 	buffer := make([]byte, SAMPLE_SIZE)
 	h := fnv.New64a()
 	for file := range files {
@@ -34,9 +37,10 @@ func g(files <-chan File, results chan<- File) {
 		h.Write(buffer)
 
 		file.Hash = h.Sum64()
-		results <- file
+		results.mutex.Lock()
+		results.Files = append(results.Files, file)
+		results.mutex.Unlock()
 	}
-	wg.Done()
 }
 
 func traverse(root string) <-chan File {
@@ -54,24 +58,24 @@ func traverse(root string) <-chan File {
 }
 
 func main() {
-	results := make(chan File, 100)
+	var wg sync.WaitGroup
+	catalog := Catalog{mutex: &sync.Mutex{}}
 
 	files := traverse(".")
 
-	wg2.Add(1)
-	go func() {
-		for file := range results {
-			fmt.Printf("%s %d\n", file.Path, file.Hash)
-		}
-		wg2.Done()
-	}()
-
 	for w := 0; w < WORKERS; w++ {
 		wg.Add(1)
-		go g(files, results)
+		go func() {
+			g(files, &catalog)
+			wg.Done()
+		}()
 	}
 	wg.Wait()
-	close(results)
-	wg2.Wait()
 
+	f, _ := os.Create("out.gob")
+	defer f.Close()
+	enc := gob.NewEncoder(f)
+	for _, file := range catalog.Files {
+		enc.Encode(file)
+	}
 }
