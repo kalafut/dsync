@@ -22,12 +22,7 @@ type File struct {
 	Hash uint64
 }
 
-type Catalog struct {
-	mutex *sync.Mutex
-	Files []File
-}
-
-func g(files <-chan File, results *Catalog) {
+func hashFiles(files <-chan *File, catalog *Catalog) {
 	buffer := make([]byte, SAMPLE_SIZE)
 	h := fnv.New64a()
 	for file := range files {
@@ -37,19 +32,17 @@ func g(files <-chan File, results *Catalog) {
 		h.Write(buffer)
 
 		file.Hash = h.Sum64()
-		results.mutex.Lock()
-		results.Files = append(results.Files, file)
-		results.mutex.Unlock()
+		catalog.AddFile(file)
 	}
 }
 
-func traverse(root string) <-chan File {
-	files := make(chan File)
+func traverse(root string) <-chan *File {
+	files := make(chan *File)
 	go func() {
 		defer close(files)
 		filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 			if true || EXT[filepath.Ext(path)] {
-				files <- File{Path: path, Size: info.Size()}
+				files <- &File{Path: path, Size: info.Size()}
 			}
 			return nil
 		})
@@ -59,15 +52,15 @@ func traverse(root string) <-chan File {
 
 func main() {
 	var wg sync.WaitGroup
-	catalog := Catalog{mutex: &sync.Mutex{}}
+	catalog := NewCatalog()
 
 	files := traverse(".")
 
 	for w := 0; w < WORKERS; w++ {
 		wg.Add(1)
 		go func() {
-			g(files, &catalog)
-			wg.Done()
+			defer wg.Done()
+			hashFiles(files, catalog)
 		}()
 	}
 	wg.Wait()
