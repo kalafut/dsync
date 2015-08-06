@@ -5,13 +5,12 @@ import (
 	"hash/fnv"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/davecheney/profile"
-	"github.com/kalafut/gosh"
-	"github.com/spf13/cobra"
+	"bitbucket.org/kalafut/gosh"
+
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const SAMPLE_SIZE = 4096
@@ -42,9 +41,9 @@ func traverse(root string) <-chan *File {
 			if err != nil {
 				panic(err)
 			}
-			if exts.Contains(strings.ToLower(filepath.Ext(path))) {
-				files <- &File{Path: path, Size: info.Size(), ModTime: info.ModTime()}
-			}
+			//if exts.Contains(strings.ToLower(filepath.Ext(path))) {
+			files <- &File{Path: path, Size: info.Size(), ModTime: info.ModTime()}
+			//}
 			return nil
 		})
 	}()
@@ -56,57 +55,6 @@ func monitor(catalog *Catalog) {
 		fmt.Println(len(catalog.Files))
 		time.Sleep(1 * time.Second)
 	}
-}
-
-func cli() {
-	var HugoCmd = &cobra.Command{
-		Use:   "hugo",
-		Short: "Hugo is a very fast static site generator",
-		Long: `A Fast and Flexible Static Site Generator built with
-					            love by spf13 and friends in Go.
-								            Complete documentation is available at http://hugo.spf13.com`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("here!!!")
-			// Do Stuff Here
-		},
-	}
-	var versionCmd = &cobra.Command{
-		Use:   "version",
-		Short: "Print the version number of Hugo",
-		Long:  `All software has versions. This is Hugo's`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Hugo Static Site Generator v0.9 -- HEAD")
-		},
-	}
-	HugoCmd.AddCommand(versionCmd)
-
-	var buildCmd = &cobra.Command{
-		Use:   "build [root]",
-		Short: "Print the version number of Hugo",
-		Long:  `All software has versions. This is Hugo's`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.Help()
-				return
-			}
-			build(args[0])
-		},
-	}
-	HugoCmd.AddCommand(buildCmd)
-
-	var listCmd = &cobra.Command{
-		Use:   "catalog",
-		Short: "Print the version number of Hugo",
-		Long:  `All software has versions. This is Hugo's`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := listCatalog(); err != nil {
-				fmt.Println(err)
-			}
-		},
-	}
-	HugoCmd.AddCommand(listCmd)
-
-	HugoCmd.Execute()
 }
 
 func listCatalog() error {
@@ -140,19 +88,26 @@ func build(root string) {
 }
 
 func main() {
-	cfg := profile.Config{
-		MemProfile:     true,
-		CPUProfile:     true,
-		BlockProfile:   true,
-		ProfilePath:    ".",  // store profiles in current directory
-		NoShutdownHook: true, // do not hook SIGINT
+	var (
+		app = kingpin.New("dsync", "Directory Synchronizer")
+
+		buildCmd = app.Command("build", "Build catalog.")
+		path     = buildCmd.Arg("path", "Root path").Required().String()
+		//registerName = register.Arg("name", "Name of user.").Required().String()
+
+		list = app.Command("list", "List catalog.")
+		//postImage = post.Flag("image", "Image to post.").File()
+		//postChannel = post.Arg("channel", "Channel to post to.").Required().String()
+		//postText = post.Arg("text", "Text to post.").Strings()
+	)
+
+	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case buildCmd.FullCommand():
+		build(*path)
+
+	// Post message
+	case list.FullCommand():
+		listCatalog()
 	}
 
-	// p.Stop() must be called before the program exits to
-	// ensure profiling information is written to disk.
-	//p := profile.Start(&cfg)
-	//defer p.Stop()
-	_ = cfg
-
-	cli()
 }
