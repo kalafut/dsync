@@ -14,9 +14,41 @@ import (
 )
 
 const SAMPLE_SIZE = 4096
+const FULL_HASH_LIMIT = 3 * SAMPLE_SIZE
+
 const WORKERS = 10
 
 var exts = gosh.NewSet(".jpg", ".mp4")
+
+func smartHash(file string) (uint64, error) {
+	h := fnv.New64a()
+
+	f, err := os.Open(file)
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	if fi.Size() <= FULL_HASH_LIMIT {
+		buffer := make([]byte, fi.Size())
+		f.Read(buffer)
+		h.Write(buffer)
+	} else {
+		buffer := make([]byte, SAMPLE_SIZE)
+		f.Read(buffer)
+		h.Write(buffer)
+		f.Seek(fi.Size()/2, 0)
+		f.Read(buffer)
+		h.Write(buffer)
+		f.Seek(-SAMPLE_SIZE, 2)
+		f.Read(buffer)
+		h.Write(buffer)
+	}
+
+	return h.Sum64(), nil
+}
 
 func hashFiles(files <-chan *File, catalog *Catalog) {
 	buffer := make([]byte, SAMPLE_SIZE)
