@@ -74,7 +74,9 @@ func traverse(root string) <-chan *File {
 				panic(err)
 			}
 			//if exts.Contains(strings.ToLower(filepath.Ext(path))) {
-			files <- &File{Path: path, Size: info.Size(), ModTime: info.ModTime()}
+			if info.Mode().IsRegular() {
+				files <- &File{Path: path, Size: info.Size(), ModTime: info.ModTime()}
+			}
 			//}
 			return nil
 		})
@@ -89,8 +91,8 @@ func monitor(catalog *Catalog) {
 	}
 }
 
-func listCatalog() error {
-	catalog, err := LoadCatalog("c.gob")
+func listCatalog(name string) error {
+	catalog, err := LoadCatalog(name)
 	if err != nil {
 		return err
 	}
@@ -99,7 +101,7 @@ func listCatalog() error {
 	return nil
 }
 
-func build(root string) {
+func build(root string, name string) {
 	var wg sync.WaitGroup
 	catalog := NewCatalog()
 
@@ -116,7 +118,29 @@ func build(root string) {
 	}
 	wg.Wait()
 
-	catalog.Save("c.gob")
+	catalog.Save(name)
+}
+
+func dedupe(keep string, kill string, doDelete bool) error {
+	keepCat, err := LoadCatalog(keep)
+	if err != nil {
+		return err
+	}
+	killCat, err := LoadCatalog(kill)
+	if err != nil {
+		return err
+	}
+	files := BInA(keepCat, killCat)
+
+	for _, f := range files {
+		if doDelete {
+			os.Remove(f)
+			fmt.Print("Deleting: ")
+		}
+		fmt.Println(f)
+	}
+
+	return nil
 }
 
 func main() {
@@ -125,21 +149,27 @@ func main() {
 
 		buildCmd = app.Command("build", "Build catalog.")
 		path     = buildCmd.Arg("path", "Root path").Required().String()
-		//registerName = register.Arg("name", "Name of user.").Required().String()
+		name     = buildCmd.Arg("name", "Catalog name").Required().String()
 
-		list = app.Command("list", "List catalog.")
-		//postImage = post.Flag("image", "Image to post.").File()
-		//postChannel = post.Arg("channel", "Channel to post to.").Required().String()
-		//postText = post.Arg("text", "Text to post.").Strings()
+		list      = app.Command("list", "List catalog.")
+		list_name = list.Arg("name", "Catalog name").Required().String()
+
+		dedupeCmd = app.Command("dedupe", "Dedupe")
+		keep      = dedupeCmd.Arg("keep name", "Keep catalog").Required().String()
+		kill      = dedupeCmd.Arg("kill name", "Kill catalog").Required().String()
+		doDelete  = dedupeCmd.Flag("delete", "Delete files").Bool()
 	)
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case buildCmd.FullCommand():
-		build(*path)
+		build(*path, *name)
 
 	// Post message
 	case list.FullCommand():
-		listCatalog()
+		listCatalog(*list_name)
+
+	case dedupeCmd.FullCommand():
+		dedupe(*keep, *kill, *doDelete)
 	}
 
 }

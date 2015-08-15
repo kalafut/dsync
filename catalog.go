@@ -32,7 +32,7 @@ func (c *Catalog) AddFile(file *File) {
 
 func (c *Catalog) List() {
 	for _, f := range c.Files {
-		fmt.Printf("%-30s   %d\n", f.Path, f.Size)
+		fmt.Printf("%-30s   %d %x\n", f.Path, f.Size, f.Hash)
 	}
 }
 
@@ -64,4 +64,18 @@ func (c *Catalog) Save(filename string) error {
 	enc.Encode(c)
 
 	return err
+}
+
+func BInA(a *Catalog, b *Catalog) []string {
+	files := []string{}
+
+	for _, bFile := range b.Files {
+		for _, aFile := range a.Files {
+			if aFile.Size == bFile.Size && aFile.Hash == bFile.Hash {
+				files = append(files, bFile.Path)
+			}
+		}
+	}
+
+	return files
 }
