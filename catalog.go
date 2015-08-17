@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -17,10 +18,43 @@ type File struct {
 	ModTime time.Time
 }
 
+type Root struct {
+	catalog *Catalog
+	mutex   *sync.Mutex
+	Path    string
+	Files   []*File
+}
+
 type Catalog struct {
-	filename string
-	mutex    *sync.Mutex
-	Files    []*File
+	mutex  *sync.Mutex
+	Files  []*File
+	Roots  []*Root
+	Hashes map[uint64][]struct {
+		*Root
+		*File
+	}
+}
+
+func (c *Catalog) AddRoot(path string) (*Root, error) {
+	for _, r := range c.Roots {
+		if r.Path == path {
+			return nil, errors.New("Root " + path + " already exists")
+		}
+	}
+
+	root := &Root{Path: path, mutex: &sync.Mutex{}, catalog: c}
+	c.Roots = append(c.Roots, root)
+
+	return root, nil
+}
+
+func (r *Root) AddFile(file *File) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	r.Files = append(r.Files, file)
+	//h := r.catalog.Hashes
+
 }
 
 func (c *Catalog) AddFile(file *File) {
