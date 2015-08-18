@@ -53,8 +53,12 @@ func (r *Root) AddFile(file *File) {
 	defer r.mutex.Unlock()
 
 	r.Files = append(r.Files, file)
-	//h := r.catalog.Hashes
-
+	hs := r.catalog.Hashes[file.Hash]
+	hs = append(hs, struct {
+		*Root
+		*File
+	}{r, file})
+	r.catalog.Hashes[file.Hash] = hs
 }
 
 func (c *Catalog) AddFile(file *File) {
@@ -71,7 +75,10 @@ func (c *Catalog) List() {
 }
 
 func NewCatalog() *Catalog {
-	return &Catalog{mutex: &sync.Mutex{}}
+	return &Catalog{mutex: &sync.Mutex{}, Hashes: make(map[uint64][]struct {
+		*Root
+		*File
+	})}
 }
 
 func LoadCatalog(filename string) (*Catalog, error) {
