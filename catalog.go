@@ -25,14 +25,16 @@ type Root struct {
 	Files   []*File
 }
 
+type RF struct {
+	*Root
+	*File
+}
+
 type Catalog struct {
 	mutex  *sync.Mutex
 	Files  []*File
 	Roots  []*Root
-	Hashes map[uint64][]struct {
-		*Root
-		*File
-	}
+	Hashes map[uint64][]RF
 }
 
 func (c *Catalog) AddRoot(path string) (*Root, error) {
@@ -75,10 +77,7 @@ func (c *Catalog) List() {
 }
 
 func NewCatalog() *Catalog {
-	return &Catalog{mutex: &sync.Mutex{}, Hashes: make(map[uint64][]struct {
-		*Root
-		*File
-	})}
+	return &Catalog{mutex: &sync.Mutex{}, Hashes: make(map[uint64][]RF)}
 }
 
 func LoadCatalog(filename string) (*Catalog, error) {

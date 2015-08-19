@@ -48,30 +48,17 @@ func TestRootAddFile(t *testing.T) {
 	r2.AddFile(f2)
 	r2.AddFile(f3)
 
+	// Test that files ended up in files lists
 	is.Equal(r1.Files, []*File{f1, f2, f3})
 	is.Equal(r2.Files, []*File{f2, f3})
 
+	// Test that files ended up in hash lists
 	h := c.Hashes[95]
-	hf := h[0]
-	is.Equal(hf.Root, r1)
-	is.Equal(hf.File, f2)
+	is.Equal(h[0], RF{r1, f2})
+	is.Equal(h[1], RF{r2, f2})
 
-hf=h[1]
-is.Equal(hf.Root, r2)
-	is.Equal(hf.File, f2)
-
-h = c.Hashes[42]
-	hf = h[0]
-	is.Equal(hf.Root, r1)
-	is.Equal(hf.File, f1)
-
-hf=h[1]
-is.Equal(hf.Root, r1)
-	is.Equal(hf.File, f3)
-
-	hf = h[2]
-	is.Equal(hf.Root, r2)
-	is.Equal(hf.File, f3)
-
-
+	h = c.Hashes[42]
+	is.Equal(h[0], RF{r1, f1})
+	is.Equal(h[1], RF{r1, f3})
+	is.Equal(h[2], RF{r2, f3})
 }
