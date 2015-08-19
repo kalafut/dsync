@@ -55,4 +55,23 @@ func TestRootAddFile(t *testing.T) {
 	hf := h[0]
 	is.Equal(hf.Root, r1)
 	is.Equal(hf.File, f2)
+
+hf=h[1]
+is.Equal(hf.Root, r2)
+	is.Equal(hf.File, f2)
+
+h = c.Hashes[42]
+	hf = h[0]
+	is.Equal(hf.Root, r1)
+	is.Equal(hf.File, f1)
+
+hf=h[1]
+is.Equal(hf.Root, r1)
+	is.Equal(hf.File, f3)
+
+	hf = h[2]
+	is.Equal(hf.Root, r2)
+	is.Equal(hf.File, f3)
+
+
 }
