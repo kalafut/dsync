@@ -19,21 +19,21 @@ func TestHash(t *testing.T) {
 	os.Remove("sample.txt")
 	is.NotErr(err)
 
-	is.Equal(h, uint64(10489554043305584505))
+	is.Equal(h, uint64(17979848387975388706))
 
 	WriteSample("sample.txt", 10000000)
 	h, err = smartHash("sample.txt")
 	os.Remove("sample.txt")
 	is.NotErr(err)
 
-	is.Equal(h, uint64(4524196217030972197))
+	is.Equal(h, uint64(10621854096520371093))
 
 	WriteSample("sample.txt", 10000001)
 	h, err = smartHash("sample.txt")
 	os.Remove("sample.txt")
 	is.NotErr(err)
 
-	is.Equal(h, uint64(4524196217030972197))
+	is.Equal(h, uint64(10621854096520371093))
 }
 
 func WriteSample(name string, size int) {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"hash/fnv"
 	"os"
 	"path/filepath"
 	"sync"
@@ -10,6 +9,7 @@ import (
 
 	"bitbucket.org/kalafut/gosh"
 
+	"github.com/spaolacci/murmur3"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -21,7 +21,7 @@ const WORKERS = 10
 var exts = gosh.NewSet(".jpg", ".mp4")
 
 func smartHash(file string) (uint64, error) {
-	h := fnv.New64a()
+	h := murmur3.New64()
 
 	f, err := os.Open(file)
 	defer f.Close()
@@ -52,7 +52,7 @@ func smartHash(file string) (uint64, error) {
 
 func hashFiles(files <-chan *File, catalog *Catalog) {
 	buffer := make([]byte, SAMPLE_SIZE)
-	h := fnv.New64a()
+	h := murmur3.New64()
 	for file := range files {
 		h.Reset()
 		f, _ := os.Open(file.Path)
