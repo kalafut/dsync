@@ -75,5 +75,5 @@ func TestRootRemoveFile(t *testing.T) {
 	r1.RemoveFile(f1.Path)
 
 	is.Equal(r1.Files, []*File{f2})
-	is.Equal(c.Hashes[95], []RF{})
+	is.Equal(c.Hashes[42], []RF{})
 }

@@ -105,10 +105,8 @@ func (c *Catalog) Unhash(file RF) {
 	if ok {
 		for i, _ := range h {
 			if h[i] == file {
-				fmt.Println(c.Hashes[file.Hash])
 				h[i] = h[len(h)-1]
 				c.Hashes[file.Hash] = h[:len(h)-1]
-				fmt.Println(c.Hashes[file.Hash])
 				break
 			}
 		}
