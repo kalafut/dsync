@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	"time"
 
 	"gopkg.in/tylerb/is.v1"
 )
@@ -13,6 +12,9 @@ var (
 	c   *Catalog
 	r   *Root
 	err error
+	f1  = &File{Path: "f1", Size: 50, Hash: 42}
+	f2  = &File{Path: "f2", Size: 150, Hash: 95}
+	f3  = &File{Path: "f3", Size: 50, Hash: 42}
 )
 
 //Test that duplicate root aren't allowed
@@ -32,10 +34,6 @@ func TestDupeRoot(t *testing.T) {
 
 func TestRootAddFile(t *testing.T) {
 	is := is.New(t)
-
-	f1 := &File{Path: "f1", Size: 50, Hash: 42, ModTime: time.Now()}
-	f2 := &File{Path: "f2", Size: 150, Hash: 95, ModTime: time.Now()}
-	f3 := &File{Path: "f3", Size: 50, Hash: 42, ModTime: time.Now()}
 
 	c = NewCatalog()
 	r1, _ := c.AddRoot("r1")
@@ -61,4 +59,21 @@ func TestRootAddFile(t *testing.T) {
 	is.Equal(h[0], RF{r1, f1})
 	is.Equal(h[1], RF{r1, f3})
 	is.Equal(h[2], RF{r2, f3})
+}
+
+func TestRootRemoveFile(t *testing.T) {
+	is := is.New(t)
+
+	c = NewCatalog()
+	r1, _ := c.AddRoot("r1")
+
+	r1.AddFile(f1)
+	r1.AddFile(f2)
+	is.Equal(r1.Files, []*File{f1, f2})
+	is.NotNil(c.Hashes[95])
+
+	r1.RemoveFile(f1.Path)
+
+	is.Equal(r1.Files, []*File{f2})
+	is.Equal(c.Hashes[95], []RF{})
 }

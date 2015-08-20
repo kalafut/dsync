@@ -63,11 +63,57 @@ func (r *Root) AddFile(file *File) {
 	r.catalog.Hashes[file.Hash] = hs
 }
 
+func (r *Root) RemoveFile(path string) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	fs := r.Files
+
+	for i, _ := range fs {
+		if fs[i].Path == path {
+			r.catalog.Unhash(RF{Root: r, File: fs[i]})
+			fs[i] = fs[len(fs)-1]
+			fs[len(fs)-1] = nil
+			r.Files = fs[:len(fs)-1]
+			break
+		}
+	}
+
+	/*
+		r.Files = append(r.Files, file)
+		hs := r.catalog.Hashes[file.Hash]
+		hs = append(hs, struct {
+			*Root
+			*File
+		}{r, file})
+		r.catalog.Hashes[file.Hash] = hs
+	*/
+}
+
 func (c *Catalog) AddFile(file *File) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	c.Files = append(c.Files, file)
+}
+
+func (c *Catalog) Unhash(file RF) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	h, ok := c.Hashes[file.Hash]
+	if ok {
+		for i, _ := range h {
+			if h[i] == file {
+				fmt.Println(c.Hashes[file.Hash])
+				h[i] = h[len(h)-1]
+				c.Hashes[file.Hash] = h[:len(h)-1]
+				fmt.Println(c.Hashes[file.Hash])
+				break
+			}
+		}
+
+	}
 }
 
 func (c *Catalog) List() {
