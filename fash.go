@@ -86,7 +86,7 @@ func traverse(root string) <-chan *File {
 
 func monitor(catalog *Catalog) {
 	for {
-		fmt.Println(len(catalog.Files))
+		fmt.Println(catalog.count)
 		time.Sleep(1 * time.Second)
 	}
 }

@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/gob"
-	"errors"
-	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -19,85 +17,28 @@ type File struct {
 }
 
 type Root struct {
-	catalog *Catalog
-	mutex   *sync.Mutex
 	Path    string
-	Files   []*File
-}
-
-type RF struct {
-	*Root
-	*File
+	Name    string
+	Updated time.Time
 }
 
 type Catalog struct {
 	mutex  *sync.Mutex
-	Files  []*File
-	Roots  []*Root
-	Hashes map[uint64][]RF
-}
-
-func (c *Catalog) AddRoot(path string) (*Root, error) {
-	for _, r := range c.Roots {
-		if r.Path == path {
-			return nil, errors.New("Root " + path + " already exists")
-		}
-	}
-
-	root := &Root{Path: path, mutex: &sync.Mutex{}, catalog: c}
-	c.Roots = append(c.Roots, root)
-
-	return root, nil
-}
-
-func (r *Root) AddFile(file *File) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	r.Files = append(r.Files, file)
-	hs := r.catalog.Hashes[file.Hash]
-	hs = append(hs, struct {
-		*Root
-		*File
-	}{r, file})
-	r.catalog.Hashes[file.Hash] = hs
-}
-
-func (r *Root) RemoveFile(path string) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	fs := r.Files
-
-	for i, _ := range fs {
-		if fs[i].Path == path {
-			r.catalog.Unhash(RF{Root: r, File: fs[i]})
-			fs[i] = fs[len(fs)-1]
-			fs[len(fs)-1] = nil
-			r.Files = fs[:len(fs)-1]
-			break
-		}
-	}
-
-	/*
-		r.Files = append(r.Files, file)
-		hs := r.catalog.Hashes[file.Hash]
-		hs = append(hs, struct {
-			*Root
-			*File
-		}{r, file})
-		r.catalog.Hashes[file.Hash] = hs
-	*/
+	count  int
+	Roots  []Root
+	Hashes map[uint64][]*File
 }
 
 func (c *Catalog) AddFile(file *File) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	c.Files = append(c.Files, file)
+	hash := file.Hash
+	c.Hashes[hash] = append(c.Hashes[hash], file)
+	c.count++
 }
 
-func (c *Catalog) Unhash(file RF) {
+func (c *Catalog) RemoveFile(file *File) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -114,14 +55,61 @@ func (c *Catalog) Unhash(file RF) {
 	}
 }
 
-func (c *Catalog) List() {
-	for _, f := range c.Files {
-		fmt.Printf("%-30s   %d %x\n", f.Path, f.Size, f.Hash)
+func (c *Catalog) List() []*File {
+	var files = make([]*File, 0)
+
+	for _, fa := range c.Hashes {
+		for _, f := range fa {
+			files = append(files, f)
+		}
 	}
+
+	//for _, f := range files {
+	//	fmt.Printf("%-30s   %d %x\n", f.Path, f.Size, f.Hash)
+	//}
+
+	return files
+}
+
+func (c *Catalog) Dupes() [][]*File {
+	var dupes = make([][]*File, 0)
+
+	for _, fa := range c.Hashes {
+		if len(fa) > 1 {
+			// Don't bother checking file size, for now
+			dupes = append(dupes, fa)
+		}
+	}
+
+	return dupes
+}
+
+func (c *Catalog) AddRoot(path, name string) {
+	c.Roots = append(c.Roots, Root{Path: path, Name: name})
+}
+
+func (c *Catalog) RootNames() []string {
+	var r []string
+
+	for _, root := range c.Roots {
+		r = append(r, root.Name)
+	}
+
+	return r
+}
+
+func (c *Catalog) GetPath(root string) (ret string) {
+	for _, r := range c.Roots {
+		if r.Name == root {
+			ret = r.Path
+		}
+	}
+
+	return ret
 }
 
 func NewCatalog() *Catalog {
-	return &Catalog{mutex: &sync.Mutex{}, Hashes: make(map[uint64][]RF)}
+	return &Catalog{mutex: &sync.Mutex{}, Hashes: make(map[uint64][]*File)}
 }
 
 func LoadCatalog(filename string) (*Catalog, error) {
@@ -153,6 +141,7 @@ func (c *Catalog) Save(filename string) error {
 func BInA(a *Catalog, b *Catalog) []string {
 	files := []string{}
 
+	/* Disable for now
 	for _, bFile := range b.Files {
 		for _, aFile := range a.Files {
 			if aFile.Size == bFile.Size && aFile.Hash == bFile.Hash {
@@ -160,6 +149,7 @@ func BInA(a *Catalog, b *Catalog) []string {
 			}
 		}
 	}
+	*/
 
 	return files
 }
