@@ -10,7 +10,6 @@ import (
 	"bitbucket.org/kalafut/gosh"
 
 	"github.com/spaolacci/murmur3"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const SAMPLE_SIZE = 4096
@@ -141,35 +140,4 @@ func dedupe(keep string, kill string, doDelete bool) error {
 	}
 
 	return nil
-}
-
-func main() {
-	var (
-		app = kingpin.New("dsync", "Directory Synchronizer")
-
-		buildCmd = app.Command("build", "Build catalog.")
-		path     = buildCmd.Arg("path", "Root path").Required().String()
-		name     = buildCmd.Arg("name", "Catalog name").Required().String()
-
-		list      = app.Command("list", "List catalog.")
-		list_name = list.Arg("name", "Catalog name").Required().String()
-
-		dedupeCmd = app.Command("dedupe", "Dedupe")
-		keep      = dedupeCmd.Arg("keep name", "Keep catalog").Required().String()
-		kill      = dedupeCmd.Arg("kill name", "Kill catalog").Required().String()
-		doDelete  = dedupeCmd.Flag("delete", "Delete files").Bool()
-	)
-
-	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
-	case buildCmd.FullCommand():
-		build(*path, *name)
-
-	// Post message
-	case list.FullCommand():
-		listCatalog(*list_name)
-
-	case dedupeCmd.FullCommand():
-		dedupe(*keep, *kill, *doDelete)
-	}
-
 }

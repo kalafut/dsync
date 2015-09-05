@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
@@ -89,6 +90,19 @@ func TestAddRoot(t *testing.T) {
 
 	is.Equal(c.GetPath("A"), "/path/a")
 	is.Equal(c.GetPath("B"), "/another/path/b")
+}
+
+func TestSelect(t *testing.T) {
+	is := is.New(t)
+
+	const test_cfg = ".test_cfg"
+
+	selectCatalog(test_cfg, "some_catalog")
+	is.Equal(getSelectedCatalog(test_cfg), "some_catalog")
+	selectCatalog(test_cfg, "another.catalog")
+	is.Equal(getSelectedCatalog(test_cfg), "another.catalog")
+
+	os.Remove(test_cfg)
 }
 
 func contains(elem interface{}, list interface{}) bool {

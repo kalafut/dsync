@@ -25,7 +25,7 @@ type Root struct {
 type Catalog struct {
 	mutex  *sync.Mutex
 	count  int
-	Roots  []Root
+	Roots  map[string][]Root
 	Hashes map[uint64][]*File
 }
 
@@ -85,13 +85,15 @@ func (c *Catalog) Dupes() [][]*File {
 }
 
 func (c *Catalog) AddRoot(path, name string) {
-	c.Roots = append(c.Roots, Root{Path: path, Name: name})
+	m, _ := os.Hostname()
+	c.Roots[m] = append(c.Roots[m], Root{Path: path, Name: name})
 }
 
 func (c *Catalog) RootNames() []string {
 	var r []string
+	m, _ := os.Hostname()
 
-	for _, root := range c.Roots {
+	for _, root := range c.Roots[m] {
 		r = append(r, root.Name)
 	}
 
@@ -99,7 +101,8 @@ func (c *Catalog) RootNames() []string {
 }
 
 func (c *Catalog) GetPath(root string) (ret string) {
-	for _, r := range c.Roots {
+	m, _ := os.Hostname()
+	for _, r := range c.Roots[m] {
 		if r.Name == root {
 			ret = r.Path
 		}
@@ -109,7 +112,11 @@ func (c *Catalog) GetPath(root string) (ret string) {
 }
 
 func NewCatalog() *Catalog {
-	return &Catalog{mutex: &sync.Mutex{}, Hashes: make(map[uint64][]*File)}
+	return &Catalog{
+		mutex:  &sync.Mutex{},
+		Hashes: make(map[uint64][]*File),
+		Roots:  make(map[string][]Root),
+	}
 }
 
 func LoadCatalog(filename string) (*Catalog, error) {
