@@ -1,10 +1,9 @@
-package main
+package dsync
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"bitbucket.org/kalafut/gosh"
@@ -18,6 +17,7 @@ const FULL_HASH_LIMIT = 3 * SAMPLE_SIZE
 const WORKERS = 10
 
 var exts = gosh.NewSet(".jpg", ".mp4")
+var excluded = gosh.NewSet(".DS_Store")
 
 func smartHash(file string) (uint64, error) {
 	h := murmur3.New64()
@@ -72,9 +72,11 @@ func traverse(root string) <-chan *File {
 			if err != nil {
 				panic(err)
 			}
+			valid := !excluded.Contains(filepath.Base(path)) && info.Mode().IsRegular()
 			//if exts.Contains(strings.ToLower(filepath.Ext(path))) {
-			if info.Mode().IsRegular() {
-				files <- &File{Path: path, Size: info.Size(), ModTime: info.ModTime()}
+
+			if valid {
+				files <- &File{Path: filepath.ToSlash(path), Size: info.Size(), ModTime: info.ModTime()}
 			}
 			//}
 			return nil
@@ -88,56 +90,4 @@ func monitor(catalog *Catalog) {
 		fmt.Println(catalog.count)
 		time.Sleep(1 * time.Second)
 	}
-}
-
-func listCatalog(name string) error {
-	catalog, err := LoadCatalog(name)
-	if err != nil {
-		return err
-	}
-	catalog.List()
-
-	return nil
-}
-
-func build(root string, name string) {
-	var wg sync.WaitGroup
-	catalog := NewCatalog()
-
-	go monitor(catalog)
-
-	files := traverse(root)
-
-	for w := 0; w < WORKERS; w++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			hashFiles(files, catalog)
-		}()
-	}
-	wg.Wait()
-
-	catalog.Save(name)
-}
-
-func dedupe(keep string, kill string, doDelete bool) error {
-	keepCat, err := LoadCatalog(keep)
-	if err != nil {
-		return err
-	}
-	killCat, err := LoadCatalog(kill)
-	if err != nil {
-		return err
-	}
-	files := BInA(keepCat, killCat)
-
-	for _, f := range files {
-		if doDelete {
-			os.Remove(f)
-			fmt.Print("Deleting: ")
-		}
-		fmt.Println(f)
-	}
-
-	return nil
 }

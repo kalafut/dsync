@@ -1,8 +1,10 @@
-package main
+package dsync
 
 import (
 	"encoding/gob"
+	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -22,6 +24,7 @@ type Root struct {
 	Updated time.Time
 }
 
+// Catalog is a truly great type.
 type Catalog struct {
 	mutex  *sync.Mutex
 	count  int
@@ -29,6 +32,7 @@ type Catalog struct {
 	Hashes map[uint64][]*File
 }
 
+// AddFile adds a File to the catalog.
 func (c *Catalog) AddFile(file *File) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -38,6 +42,7 @@ func (c *Catalog) AddFile(file *File) {
 	c.count++
 }
 
+// RemoveFile adds a File to the catalog.
 func (c *Catalog) RemoveFile(file *File) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -84,9 +89,10 @@ func (c *Catalog) Dupes() [][]*File {
 	return dupes
 }
 
+// AddRoot adds a named path (aka "root") to the catalog.
 func (c *Catalog) AddRoot(path, name string) {
 	m, _ := os.Hostname()
-	c.Roots[m] = append(c.Roots[m], Root{Path: path, Name: name})
+	c.Roots[m] = append(c.Roots[m], Root{Path: filepath.ToSlash(path), Name: name})
 }
 
 func (c *Catalog) RootNames() []string {
@@ -100,10 +106,11 @@ func (c *Catalog) RootNames() []string {
 	return r
 }
 
-func (c *Catalog) GetPath(root string) (ret string) {
+// GetPath returns the path associated with the named Root.
+func (c *Catalog) RootPath(name string) (ret string) {
 	m, _ := os.Hostname()
 	for _, r := range c.Roots[m] {
-		if r.Name == root {
+		if r.Name == name {
 			ret = r.Path
 		}
 	}
@@ -159,4 +166,43 @@ func BInA(a *Catalog, b *Catalog) []string {
 	*/
 
 	return files
+}
+
+func ListCatalog(name string) error {
+	catalog, err := LoadCatalog(name)
+	if err != nil {
+		return err
+	}
+	catalog.List()
+
+	return nil
+}
+
+func Dedupe(keep string, kill string, doDelete bool) error {
+	keepCat, err := LoadCatalog(keep)
+	if err != nil {
+		return err
+	}
+	killCat, err := LoadCatalog(kill)
+	if err != nil {
+		return err
+	}
+	files := BInA(keepCat, killCat)
+
+	for _, f := range files {
+		if doDelete {
+			os.Remove(f)
+			fmt.Print("Deleting: ")
+		}
+		fmt.Println(f)
+	}
+
+	return nil
+}
+
+// UpdateRoot recursively scans the named root, adding/updating files as necessary.
+// Files that are in the catalog but not found on disk will be removed if clean is true.
+func (c *Catalog) UpdateRoot(name string, clean bool) {
+	files := traverse(c.RootPath(name))
+	hashFiles(files, c)
 }

@@ -1,8 +1,9 @@
-package main
+package dsync
 
 import (
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"gopkg.in/tylerb/is.v1"
@@ -19,45 +20,13 @@ var (
 	f4  = &File{Path: "f4", Size: 150, Hash: 95}
 )
 
-func TestAddFile(t *testing.T) {
-	is := is.New(t)
+// Make sortable by hash to allow consistent test results,
+// since Dupes() builds slices from a map.
+type ByHash [][]*File
 
-	c = NewCatalog()
-
-	c.AddFile(f1)
-	c.AddFile(f2)
-	c.AddFile(f3)
-
-	// Test that files ended up in hash lists
-	is.Equal(c.Hashes[42], []*File{f1, f3})
-	is.Equal(c.Hashes[95], []*File{f2})
-	is.Nil(c.Hashes[999])
-
-	// Test Removal
-	c.RemoveFile(f1)
-	is.Equal(c.Hashes[42], []*File{f3})
-	c.RemoveFile(f3)
-	is.Equal(c.Hashes[42], []*File{})
-
-	is.Equal(c.Hashes[95], []*File{f2})
-	c.RemoveFile(f2)
-	is.Equal(c.Hashes[95], []*File{})
-}
-
-func TestList(t *testing.T) {
-	is := is.New(t)
-
-	c = NewCatalog()
-
-	c.AddFile(f1)
-	c.AddFile(f2)
-	c.AddFile(f3)
-
-	l := c.List()
-	is.True(contains(f1, l))
-	is.True(contains(f2, l))
-	is.True(contains(f3, l))
-}
+func (o ByHash) Len() int           { return len(o) }
+func (o ByHash) Less(i, j int) bool { return o[i][0].Hash < o[j][0].Hash }
+func (o ByHash) Swap(i, j int)      { o[i], o[j] = o[j], o[i] }
 
 func TestDupes(t *testing.T) {
 	is := is.New(t)
@@ -70,26 +39,10 @@ func TestDupes(t *testing.T) {
 	c.AddFile(f4)
 
 	dupes := c.Dupes()
+	sort.Sort(ByHash(dupes))
 
 	is.Equal(dupes[0], []*File{f1, f3})
 	is.Equal(dupes[1], []*File{f2, f4})
-}
-
-func TestAddRoot(t *testing.T) {
-	is := is.New(t)
-
-	c = NewCatalog()
-
-	c.AddRoot("/path/a", "A")
-	c.AddRoot("/another/path/b", "B")
-
-	is.True(contains("A", c.RootNames()))
-	is.True(contains("B", c.RootNames()))
-	is.False(contains("C", c.RootNames()))
-	is.Equal(2, len(c.RootNames()))
-
-	is.Equal(c.GetPath("A"), "/path/a")
-	is.Equal(c.GetPath("B"), "/another/path/b")
 }
 
 func TestSelect(t *testing.T) {
@@ -97,10 +50,10 @@ func TestSelect(t *testing.T) {
 
 	const test_cfg = ".test_cfg"
 
-	selectCatalog(test_cfg, "some_catalog")
-	is.Equal(getSelectedCatalog(test_cfg), "some_catalog")
-	selectCatalog(test_cfg, "another.catalog")
-	is.Equal(getSelectedCatalog(test_cfg), "another.catalog")
+	SelectCatalog(test_cfg, "some_catalog")
+	is.Equal(GetSelectedCatalog(test_cfg), "some_catalog")
+	SelectCatalog(test_cfg, "another.catalog")
+	is.Equal(GetSelectedCatalog(test_cfg), "another.catalog")
 
 	os.Remove(test_cfg)
 }
