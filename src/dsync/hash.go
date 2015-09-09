@@ -78,7 +78,7 @@ func traverse(root string) <-chan *File {
 			//if exts.Contains(strings.ToLower(filepath.Ext(path))) {
 
 			if valid {
-				files <- &File{Path: filepath.ToSlash(path), Size: info.Size(), ModTime: info.ModTime()}
+				files <- &File{Path: stdSlash(path), Size: info.Size(), ModTime: info.ModTime()}
 			}
 			//}
 			return nil

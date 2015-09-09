@@ -4,7 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
-	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -92,7 +92,7 @@ func (c *Catalog) Dupes() [][]*File {
 // AddRoot adds a named path (aka "root") to the catalog.
 func (c *Catalog) AddRoot(path, name string) {
 	m, _ := os.Hostname()
-	c.Roots[m] = append(c.Roots[m], Root{Path: filepath.ToSlash(path), Name: name})
+	c.Roots[m] = append(c.Roots[m], Root{Path: stdSlash(path), Name: name})
 }
 
 func (c *Catalog) RootNames() []string {
@@ -205,4 +205,8 @@ func Dedupe(keep string, kill string, doDelete bool) error {
 func (c *Catalog) UpdateRoot(name string, clean bool) {
 	files := traverse(c.RootPath(name))
 	hashFiles(files, c)
+}
+
+func stdSlash(path string) string {
+	return strings.Replace(path, `\`, "/", -1)
 }
