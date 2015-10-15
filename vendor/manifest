@@ -1,0 +1,35 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/alecthomas/kingpin",
+			"repository": "https://github.com/alecthomas/kingpin",
+			"revision": "5be72af01b3953d98c31938060ff8a3aa0c8f900",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/alecthomas/template",
+			"repository": "https://github.com/alecthomas/template",
+			"revision": "b867cc6ab45cece8143cfcc6fc9c77cf3f2c23c0",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/alecthomas/units",
+			"repository": "https://github.com/alecthomas/units",
+			"revision": "6b4e7dc5e3143b85ea77909c72caf89416fc2915",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/spaolacci/murmur3",
+			"repository": "https://github.com/spaolacci/murmur3",
+			"revision": "0d12bf811670bf6a1a63828dfbd003eded177fce",
+			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/alecthomas/kingpin.v2",
+			"repository": "https://gopkg.in/alecthomas/kingpin.v2",
+			"revision": "b5101a19548bb5ca25d38bb60f60697c0621a473",
+			"branch": "master"
+		}
+	]
+}

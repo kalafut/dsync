@@ -3,7 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/kalafut/dsync"
+	"dsync"
+
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 

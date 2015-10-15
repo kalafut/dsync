@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"bitbucket.org/kalafut/gosh"
+	//"bitbucket.org/kalafut/gosh"
+
+	//"bitbucket.org/kalafut/gosh"
 
 	"github.com/spaolacci/murmur3"
 )
@@ -16,8 +18,8 @@ const FULL_HASH_LIMIT = 3 * SAMPLE_SIZE
 
 const WORKERS = 10
 
-var exts = gosh.NewSet(".jpg", ".mp4")
-var excluded = gosh.NewSet(".DS_Store")
+//var exts = gosh.NewSet(".jpg", ".mp4")
+//var excluded = gosh.NewSet(".DS_Store")
 
 func smartHash(file string) (uint64, error) {
 	h := murmur3.New64()
@@ -72,7 +74,7 @@ func traverse(root string) <-chan *File {
 			if err != nil {
 				panic(err)
 			}
-			valid := !excluded.Contains(filepath.Base(path)) && info.Mode().IsRegular()
+			valid := true //!excluded.Contains(filepath.Base(path)) && info.Mode().IsRegular()
 			//if exts.Contains(strings.ToLower(filepath.Ext(path))) {
 
 			if valid {

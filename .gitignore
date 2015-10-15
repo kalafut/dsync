@@ -1,2 +1,6 @@
 .dsync
 dsync/dsync
+bin/
+pkg/
+
+
