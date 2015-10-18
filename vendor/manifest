@@ -30,6 +30,12 @@
 			"repository": "https://gopkg.in/alecthomas/kingpin.v2",
 			"revision": "b5101a19548bb5ca25d38bb60f60697c0621a473",
 			"branch": "master"
+		},
+		{
+			"importpath": "gopkg.in/tylerb/is.v1",
+			"repository": "https://gopkg.in/tylerb/is.v1",
+			"revision": "af644dc42f32c63c38f7c54d1f637e2e473cdcc9",
+			"branch": "master"
 		}
 	]
 }
